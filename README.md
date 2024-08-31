@@ -9,3 +9,6 @@ This is a paired programming project to recreate Shogi using Python. The final g
   - [ ] Allow clients to still play local games
   - [ ] Run multiple games from the same server, with a game browser
 - [ ] Implement AI for solo play
+
+## Test Edit
+This is a test edit to see if git works from Twyla's environment
