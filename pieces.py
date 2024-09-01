@@ -6,11 +6,8 @@ gold_moves = [(-1, 1), (0, 1), (1, 1), (-1, 0), (1, 0), (0, -1)]
 
 
 class piece():
-    def __init__(self):#, type):
-        #self.type = type
+    def __init__(self):
         self.moveset = None
-        #full_moveset = generateAllMoves()
-        #self.moveset = full_moveset[(type, False), (type, True)]
         self.promoted = False
         self.owner = None
         self.image = None
