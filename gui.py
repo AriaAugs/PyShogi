@@ -7,10 +7,14 @@ class gameWindow():
         if not pygame.get_init():
             pygame.init()
         # game to dsiplay/control
-        self.game_state = {
-            'r1': ["red", pygame.Rect(0, 0, 40, 40)],
-            'r2': ["green", pygame.Rect(300, 300, 60, 60)]
-        }
+        # TODO - replace this with the actual game state
+        # the demo game_state is an array of arrays
+        # each sub-array contains the color and Rectangle object
+        # for each rectangle to draw
+        self.game_state = [
+            ["red", pygame.Rect(0, 0, 40, 40)],
+            ["green", pygame.Rect(300, 300, 60, 60)]
+        ]
         # keep track of the selected piece
         self.drag_item = None
         self.drag_rollback = None
@@ -23,26 +27,33 @@ class gameWindow():
             self.running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                if self.game_state['r1'][1].collidepoint(event.pos):
-                    self.drag_item = self.game_state['r1'][1]
-                    self.drag_rollback = pygame.Rect(self.drag_item)
+                # if the left mouse button is pressed
+                for rects in self.game_state:
+                    rect = rects[1]
+                    if rect.collidepoint(event.pos):
+                        # drag 'r1' if the mouse is over the rectangle
+                        self.drag_item = rect
+                        self.drag_rollback = rect.copy()
             if event.button == 3 and self.drag_item != None:
-                self.game_state['r1'][1] = self.drag_rollback
-                self.drag_item = None
-                self.drag_rollback = None
+                # if the right mouse button is pressed and we're dragging something,
+                # rollback 'r1' to where it was before we started dragging it
+                for idx in range(len(self.game_state)):
+                    if self.drag_item is self.game_state[idx][1]:
+                        self.game_state[idx][1] = self.drag_rollback
+                        self.drag_item = None
+                        self.drag_rollback = None
         if event.type == pygame.MOUSEBUTTONUP:
+            # if the mouse is released, leave the rectangle where it is
             self.drag_item = None
             self.drag_rollback = None
         if self.drag_item != None:
+            # if we're dragging something, center it on the mouse
             self.drag_item.center = pygame.mouse.get_pos()
         
-
     def render(self, screen):
         screen.fill("black")
-        keys = self.game_state.keys()
-        for key in keys:
-            item = self.game_state[key]
-            screen.fill(item[0], item[1])
+        for rects in self.game_state:
+            screen.fill(rects[0], rects[1])
         pygame.display.flip()
     
     def run(self):
