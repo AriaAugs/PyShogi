@@ -37,13 +37,14 @@ class GameWindow():
         self.clock = None
 
     def handleEvent(self, event):
-        #print(event)
         if event.type == pygame.QUIT:
             self.running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
+                # if the left mouse button was pressed, check if we clicked on a piece
                 for piece in self.game.pieces:
                     if piece.rect.collidepoint(event.pos):
+                        # we clicked on a piece, start dragging it
                         self.drag_item = piece
                         self.rollback_pos = piece.rect.center
             if event.button == 3 and self.drag_item is not None:
@@ -51,11 +52,12 @@ class GameWindow():
                 self.drag_item.rect.center = self.rollback_pos
                 self.drag_item = None
         if event.type == pygame.MOUSEBUTTONUP:
-            # if the mouse was released, snap the piece to the grid (or rollback if it's off the grid)
+            # if the mouse was released, try snapping the piece to the grid
             pos = self.game.board.on_square(self.drag_item.rect)
             if pos is not None:
                 self.game.board.snap_piece(self.drag_item.rect, pos)
             else:
+                # the piece is off the grid - roll it back instead
                 self.drag_item.rect.center = self.rollback_pos
             self.drag_item = None
             self.rollback_pos = None
@@ -64,6 +66,7 @@ class GameWindow():
             self.drag_item.rect.center = pygame.mouse.get_pos()
 
     def render(self):
+        # clear the screen, draw the board, draw the pieces, then flip the display
         self.screen.fill("black")
         self.game.board_group.draw(self.screen)
         self.game.pieces_group.draw(self.screen)
@@ -96,8 +99,12 @@ TODO: Remove for final version of code
 """
 class GameState():
     def __init__(self, board_in, pieces_in):
+        # sprite groups for stuff
+        # these are needed for drwaing all the sprites
         self.board_group = pygame.sprite.Group(board_in)
         self.pieces_group = pygame.sprite.Group(pieces_in)
+        # references to the board and pieces
+        # we want these so we can easily access them from the GUI
         self.board = board_in
         self.pieces = pieces_in
 
@@ -124,18 +131,22 @@ class GameBoard(pygame.sprite.Sprite):
                 self.grid[(x, y)] = grid_rect.center
 
     def on_square(self, rect):
+        # check to see if a rect is on a grid cell
+        # this is done by checking if the rect collides with the center of the grid cell
         for key, pos in self.grid.items():
             if rect.collidepoint(pos):
                 return key
         return None
 
     def snap_piece(self, rect, pos):
+        # set a piece's position such that it is centered within a given grid cell
         x, y = pos
         grid_rect = pygame.Rect(0, 0, self.rect.width/9, self.rect.height/9)
         grid_rect.topleft = (x*self.rect.width/9, y*self.rect.height/9)
         rect.center = grid_rect.center
 
     def add_piece(self, piece, pos):
+        # add a piece to the board and set its position
         x, y = pos
         self.board[x][y] = piece
         self.snap_piece(piece.rect, pos)
@@ -160,9 +171,12 @@ if __name__ == '__main__':
     pieces = []
     pieces.append(GamePiece((60, 60), 'red'))
     pieces.append(GamePiece((60, 60), 'yellow'))
+    pieces.append(GamePiece((60, 60), 'purple'))
+    pieces.append(GamePiece((60, 60), 'blue'))
+    pieces.append(GamePiece((60, 60), 'orange'))
     board = GameBoard((600, 600), 'gray')
-    board.add_piece(pieces[0], (1, 2))
-    board.add_piece(pieces[1], (7, 5))
+    for i, p in enumerate(pieces):
+        board.add_piece(p, (i%9, i//9))
     game = GameState(board, pieces)
     test_game = GameWindow(game)
     test_game.run()
