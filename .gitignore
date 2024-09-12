@@ -4,3 +4,8 @@ __pycache__/
 # Visual Studio Code settings
 .vscode
 .vscode/*
+
+# pdoc3 Auto-Generated Docs
+html
+html/PyShogi
+html/PyShogi/*
