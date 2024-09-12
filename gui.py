@@ -26,10 +26,10 @@ class GameWindow():
         if not pygame.get_init():
             pygame.init()
         # game to display/control
-        self.game_state = game_state
+        self.game = game_state
         # keep track of the selected piece
         self.drag_item = None
-        self.drag_rollback = None
+        self.rollback_pos = None
         # whether or not to run this game window
         self.running = False
         # these are created once self.run() is called
@@ -42,33 +42,31 @@ class GameWindow():
             self.running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                # if the left mouse button is pressed
-                for rects in self.game_state:
-                    rect = rects[1]
-                    if rect.collidepoint(event.pos):
-                        # drag 'r1' if the mouse is over the rectangle
-                        self.drag_item = rect
-                        self.drag_rollback = rect.copy()
+                for piece in self.game.pieces:
+                    if piece.rect.collidepoint(event.pos):
+                        self.drag_item = piece
+                        self.rollback_pos = piece.rect.center
             if event.button == 3 and self.drag_item is not None:
                 # if the right mouse button is pressed and we're dragging something,
-                # rollback 'r1' to where it was before we started dragging it
-                for idx in range(len(self.game_state)):
-                    if self.drag_item is self.game_state[idx][1]:
-                        self.game_state[idx][1] = self.drag_rollback
-                        self.drag_item = None
-                        self.drag_rollback = None
+                self.drag_item.rect.center = self.rollback_pos
+                self.drag_item = None
         if event.type == pygame.MOUSEBUTTONUP:
-            # if the mouse is released, leave the rectangle where it is
+            # if the mouse was released, snap the piece to the grid (or rollback if it's off the grid)
+            pos = self.game.board.on_square(self.drag_item.rect)
+            if pos is not None:
+                self.game.board.snap_piece(self.drag_item.rect, pos)
+            else:
+                self.drag_item.rect.center = self.rollback_pos
             self.drag_item = None
-            self.drag_rollback = None
-        if self.drag_item != None:
+            self.rollback_pos = None
+        if self.drag_item is not None:
             # if we're dragging something, center it on the mouse
-            self.drag_item.center = pygame.mouse.get_pos()
+            self.drag_item.rect.center = pygame.mouse.get_pos()
 
     def render(self):
         self.screen.fill("black")
-        self.game_state.board.draw(self.screen)
-        self.game_state.pieces.draw(self.screen)
+        self.game.board_group.draw(self.screen)
+        self.game.pieces_group.draw(self.screen)
         pygame.display.flip()
 
     def run(self):
@@ -98,8 +96,10 @@ TODO: Remove for final version of code
 """
 class GameState():
     def __init__(self, board_in, pieces_in):
-        self.board = pygame.sprite.Group(board_in)
-        self.pieces = pygame.sprite.Group(pieces_in)
+        self.board_group = pygame.sprite.Group(board_in)
+        self.pieces_group = pygame.sprite.Group(pieces_in)
+        self.board = board_in
+        self.pieces = pieces_in
 
 class GameBoard(pygame.sprite.Sprite):
     def __init__(self, board_size, color):
@@ -123,11 +123,22 @@ class GameBoard(pygame.sprite.Sprite):
                 grid_rect.topleft = (x*board_size[0]/9, y*board_size[1]/9)
                 self.grid[(x, y)] = grid_rect.center
 
-    def board_collide(self, rect):
+    def on_square(self, rect):
         for key, pos in self.grid.items():
             if rect.collidepoint(pos):
                 return key
         return None
+
+    def snap_piece(self, rect, pos):
+        x, y = pos
+        grid_rect = pygame.Rect(0, 0, self.rect.width/9, self.rect.height/9)
+        grid_rect.topleft = (x*self.rect.width/9, y*self.rect.height/9)
+        rect.center = grid_rect.center
+
+    def add_piece(self, piece, pos):
+        x, y = pos
+        self.board[x][y] = piece
+        self.snap_piece(piece.rect, pos)
 
 class GamePiece(pygame.sprite.Sprite):
     def __init__(self, piece_size, color):
@@ -150,6 +161,8 @@ if __name__ == '__main__':
     pieces.append(GamePiece((60, 60), 'red'))
     pieces.append(GamePiece((60, 60), 'yellow'))
     board = GameBoard((600, 600), 'gray')
-    game_state = GameState(board, pieces)
-    test_game = GameWindow(game_state)
+    board.add_piece(pieces[0], (1, 2))
+    board.add_piece(pieces[1], (7, 5))
+    game = GameState(board, pieces)
+    test_game = GameWindow(game)
     test_game.run()
