@@ -52,7 +52,8 @@ class GameWindow():
             board_width = screen_width
             #board_height = ideal_height
         # resize the board to take up the full height
-        self.game.board.image = pygame.transform.scale(self.game.board.image, (board_width, board_height))
+        self.game.board.image = pygame.transform.scale(
+            self.game.board.image, (board_width, board_height))
         self.game.board.rect = self.game.board.image.get_rect()
         self.game.board.rect.center = (screen_width // 2, screen_height // 2)
         # scale the pieces
@@ -136,12 +137,23 @@ class GameWindow():
         # want to uninitialize pygame while it's
         # still needed
 
-"""
-Test Stuff
-
-TODO: Remove for final version of code
-"""
 class GameState():
+    """State of the game, including board and all pieces
+
+    TODO: Remove this class from the GUI module
+
+    Args:
+        board_in (gui.GameBoard): The game board
+        pieces_in (list of gui.GamePiece): All the pieces in the game
+
+    Attributes:
+        game (gui.GameState): Game to render/control
+        board_group (pygame.sprite.Group): sprite group for the board
+        pieces_group (pygame.sprite.Group): sprite group for the pieces
+        board (gui.GameBoard): the game board
+        pieces (list of gui.GamePiece): the pieces in the game
+    """
+
     def __init__(self, board_in, pieces_in):
         # sprite groups for stuff
         # these are needed for drwaing all the sprites
@@ -153,6 +165,23 @@ class GameState():
         self.pieces = pieces_in
 
 class GameBoard(pygame.sprite.Sprite):
+    """The game board
+
+    TODO: Remove this class from the GUI module
+
+    Args:
+        board_size (2-element tuple): initial size of the board
+        color (string): color to draw the board
+
+    Attributes:
+        image (pygame.Surface): board's sprite
+        rect (pygame.Rect): bounding rect of the board's sprite
+        board (2D list): conceptual representation of the board spaces
+        held_white (list): pieces captured by white but not placed yet
+        held_black (list): pieces captured by black but not placed yet
+        grid (dict): map of board positions to screen coordinates
+    """
+
     def __init__(self, board_size, color):
         # Call the parent class (Sprite) constructor
         # We could use super().__init__(), but this is more explicit
@@ -171,6 +200,15 @@ class GameBoard(pygame.sprite.Sprite):
         self.gen_grid_points()
 
     def on_square(self, rect):
+        """Check if a given rect is touching the center of a grid space
+
+        Args:
+            rect (pygame.Rect): the rect to check
+
+        Returns:
+            tuple: the grid location the rect is on
+            None: returns None if the rect isn't on any grid cell
+        """
         # check to see if a rect is on a grid cell
         # this is done by checking if the rect collides with the center of the grid cell
         for key, pos in self.grid.items():
@@ -178,12 +216,24 @@ class GameBoard(pygame.sprite.Sprite):
                 return key
         return None
 
-    def snap_piece(self, rect, pos, piece=None):
+    def snap_piece(self, rect, pos):
+        """Moves a given rect to the screen position associated with a given board position
+
+        Args:
+            rect (pygame.Rect): the bounding rect to move
+            pos (tuple): the board position to move the rect to
+        """
         # set a piece's position such that it is centered within a given grid cell
         x, y = pos
         rect.center = self.grid[(x, y)]
 
     def move_piece(self, piece, pos):
+        """Move a piece to a new board position
+
+        Args:
+            piece (gui.GamePiece): the piece to move
+            pos (tuple): board position to move the piece to
+        """
         # clear the old pos
         for x, col in enumerate(self.board):
             for y, cell in enumerate(col):
@@ -193,12 +243,19 @@ class GameBoard(pygame.sprite.Sprite):
         self.add_piece(piece, pos)
 
     def add_piece(self, piece, pos):
+        """Place a piece on the board
+
+        Args:
+            piece (gui.GamePiece): the piece to place
+            pos (tuple): board position to place the piece at
+        """
         # add a piece to the board and set its position
         x, y = pos
         self.board[x][y] = piece
         self.snap_piece(piece.rect, pos)
 
     def gen_grid_points(self):
+        """Generate the mapping of board positions to screen positions"""
         grid_width = self.rect.width // 9
         grid_height = self.rect.height // 9
         x_offset = self.rect.x
@@ -210,15 +267,29 @@ class GameBoard(pygame.sprite.Sprite):
                 self.grid[(x, y)] = grid_rect.center
 
     def resize(self):
+        """Resize the board and move all the pieces accordingly"""
         self.gen_grid_points()
         # move all the pieces to the right locations
         for x in range(9):
             for y in range(9):
                 piece = self.board[x][y]
                 if isinstance(piece, GamePiece):
-                    self.snap_piece(piece.rect, (x, y), piece)
+                    self.snap_piece(piece.rect, (x, y))
 
 class GamePiece(pygame.sprite.Sprite):
+    """Pieces used in the game
+
+    TODO: Remove this class from the GUI module
+
+    Args:
+        piece_size (2-element tuple): initial size of the piece
+        color (string): color to draw the piece
+
+    Attributes:
+        image (pygame.Surface): piece's sprite
+        rect (pygame.Rect): bounding rect of the piece's sprite
+    """
+
     def __init__(self, piece_size, color):
         # Call the parent class (Sprite) constructor
         # We could use super().__init__(), but this is more explicit
@@ -245,14 +316,5 @@ if __name__ == '__main__':
     for i, p in enumerate(pieces):
         board.add_piece(p, (i%9, i//9))
     game = GameState(board, pieces)
-    for piece in pieces:
-        onboard = False
-        for col in game.board.board:
-            if piece in col:
-                onboard = True
-        if onboard:
-            print('Piece on board')
-        else:
-            print('Piece not on board')
     test_game = GameWindow(game)
     test_game.run()
