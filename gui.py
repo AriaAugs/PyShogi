@@ -38,8 +38,8 @@ class GameWindow():
         # 11 H x 9 W
         screen_width = self.screen.get_width()
         screen_height = self.screen.get_height()
-        ideal_width = screen_height #(9 * screen_height) // 11
-        ideal_height = screen_width #(11 * screen_width) // 9
+        ideal_width = (9 * screen_height) // 11
+        ideal_height = (11 * screen_width) // 9
         board_width = ideal_width
         board_height = ideal_height
         # check which dimension is the limiting factor
@@ -182,14 +182,22 @@ class GameBoard(pygame.sprite.Sprite):
         grid (dict): map of board positions to screen coordinates
     """
 
-    def __init__(self, board_size, color):
+    def __init__(self, sprite=None, board_size=None, color=None):
         # Call the parent class (Sprite) constructor
         # We could use super().__init__(), but this is more explicit
         # and avoid any issues from super() accidentally getting the wrong class
         pygame.sprite.Sprite.__init__(self)
         # create sprite stuff
-        self.image = pygame.Surface(board_size)
-        self.image.fill(color)
+        if sprite is not None:
+            self._orig_image = sprite
+        elif board_size is not None and color is not None:
+            self._orig_image = pygame.Surface(board_size)
+            self._orig_image.fill(color)
+        else:
+            print('No board sprite or size/color given! Using default...')
+            self._orig_image = pygame.Surface((900,1100))
+            self._orig_image.fill('gray')
+        self.image = self._orig_image.copy()
         self.rect = self.image.get_rect()
         # lists for the board and held pieces
         self.board = [[None for x in range(9)] for y in range(9)]
@@ -238,7 +246,7 @@ class GameBoard(pygame.sprite.Sprite):
         for x, col in enumerate(self.board):
             for y, cell in enumerate(col):
                 if cell is piece:
-                    cell = None
+                    self.board[x][y] = None
         # set the new pos
         self.add_piece(piece, pos)
 
@@ -256,10 +264,10 @@ class GameBoard(pygame.sprite.Sprite):
 
     def gen_grid_points(self):
         """Generate the mapping of board positions to screen positions"""
-        grid_width = self.rect.width // 9
-        grid_height = self.rect.height // 9
+        grid_width = self.rect.width / 9
+        grid_height = self.rect.height / 11
         x_offset = self.rect.x
-        y_offset = self.rect.y
+        y_offset = self.rect.y + grid_height
         grid_rect = pygame.Rect(0, 0, grid_width, grid_height)
         for x in range(9):
             for y in range(9):
@@ -305,14 +313,40 @@ class GamePiece(pygame.sprite.Sprite):
         # Update the position of this object by setting the values of rect.x and rect.y
         self.rect = self.image.get_rect()
 
+def generate_board_image():
+    """Generate a basic sprite for the Shogi board and save it as board.tga"""
+    surf = pygame.Surface((900, 1100))
+    surf.fill('black')
+    brush = pygame.Rect(0, 0, 98, 98)
+    idx = 0
+    colors = ['burlywood1', 'burlywood4']
+    for x in range(9):
+        for y in range(9):
+            brush.topleft = ((x*100)+1,(y*100)+101)
+            surf.fill(colors[idx], brush)
+            idx ^= 1
+    brush.size = (900, 99)
+    brush.topleft = (0, 0)
+    surf.fill('cornsilk3', brush)
+    brush.bottomleft = (0, 1100)
+    surf.fill('cornsilk3', brush)
+    pygame.image.save(surf, 'board.tga')
+
 if __name__ == '__main__':
+    # generate board image and quit
+    GENERATE_BOARD_IMAGE = False
+    if GENERATE_BOARD_IMAGE:
+        pygame.init()
+        generate_board_image()
+        quit()
+    # run a basic test game
     pieces = []
     pieces.append(GamePiece((60, 60), 'red'))
     pieces.append(GamePiece((60, 60), 'yellow'))
     pieces.append(GamePiece((60, 60), 'purple'))
     pieces.append(GamePiece((60, 60), 'blue'))
     pieces.append(GamePiece((60, 60), 'orange'))
-    board = GameBoard((600, 600), 'gray')
+    board = GameBoard(sprite=pygame.image.load('board.tga'))
     for i, p in enumerate(pieces):
         board.add_piece(p, (i%9, i//9))
     game = GameState(board, pieces)
