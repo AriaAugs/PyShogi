@@ -51,18 +51,11 @@ class GameWindow():
             # smush the game height-wise
             board_width = screen_width
             #board_height = ideal_height
-        # resize the board to take up the full height
-        self.game.board.image = pygame.transform.scale(
-            self.game.board.image, (board_width, board_height))
-        self.game.board.rect = self.game.board.image.get_rect()
-        self.game.board.rect.center = (screen_width // 2, screen_height // 2)
-        # scale the pieces
+        # resize the game pieces
         for piece in self.game.pieces:
-            p_size = (90 * (board_width // 9)) // 100
-            piece.image = pygame.transform.scale(piece.image, (p_size, p_size))
-            piece.rect = piece.image.get_rect()
-        # tell the board to resize its internal grid and fix the piece placement
-        self.game.board.resize()
+            piece.resize((90 * (board_width // 9)) // 100)
+        # resize the board and center it on the screen
+        self.game.board.resize((board_width, board_height), (screen_width // 2, screen_height // 2))
 
     def _handle_event(self, event):
         """Handle a given pygame event that has occured in this window
@@ -274,8 +267,13 @@ class GameBoard(pygame.sprite.Sprite):
                 grid_rect.topleft = ((x*grid_width)+x_offset, (y*grid_height)+y_offset)
                 self.grid[(x, y)] = grid_rect.center
 
-    def resize(self):
+    def resize(self, size, center_pos):
         """Resize the board and move all the pieces accordingly"""
+        # scale the board sprite and center it on the screen
+        self.image = pygame.transform.smoothscale(self._orig_image, size)
+        self.rect = self.image.get_rect()
+        self.rect.center = center_pos
+        # regenerate the screen coordinates for each board coordinate
         self.gen_grid_points()
         # move all the pieces to the right locations
         for x in range(9):
@@ -306,11 +304,18 @@ class GamePiece(pygame.sprite.Sprite):
 
         # Create an image of the block, and fill it with a color.
         # This could also be an image loaded from the disk.
-        self.image = pygame.Surface(piece_size)
-        self.image.fill(color)
+        self._orig_image = pygame.Surface(piece_size)
+        self._orig_image.fill(color)
+        self.image = self._orig_image.copy()
 
         # Fetch the rectangle object that has the dimensions of the image
         # Update the position of this object by setting the values of rect.x and rect.y
+        self.rect = self.image.get_rect()
+
+    def resize(self, size):
+        """Resize the piece"""
+        # scale the board sprite and center it on the screen
+        self.image = pygame.transform.smoothscale(self._orig_image, (size, size))
         self.rect = self.image.get_rect()
 
 def generate_board_image():
